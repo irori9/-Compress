@@ -1,4 +1,7 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 struct TaskRowView: View {
     @EnvironmentObject private var queue: TaskQueue
@@ -7,6 +10,9 @@ struct TaskRowView: View {
 
     @State private var showingPasswordSheet = false
     @State private var passwordInput: String = ""
+    @State private var rememberPassword: Bool = false
+    @State private var expanded: Bool = false
+    @FocusState private var pwFocused: Bool
 
     private var progressText: String {
         String(format: "%.0f%%", task.progress * 100)
@@ -37,16 +43,35 @@ struct TaskRowView: View {
                 Text(task.state.rawValue.capitalized)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                Button(action: { withAnimation { expanded.toggle() } }) {
+                    Image(systemName: expanded ? "chevron.up" : "chevron.down")
+                        .font(.caption)
+                }
+                .buttonStyle(.borderless)
             }
 
             ProgressView(value: task.progress)
                 .tint(.blue)
+                .animation(.easeInOut(duration: 0.2), value: task.progress)
+                .accessibilityLabel(Text("Progress"))
+                .accessibilityValue(Text(progressText))
 
             HStack(spacing: 12) {
                 Label(progressText, systemImage: "percent")
                 Label(speedText, systemImage: "speedometer")
                 Label(etaText, systemImage: "hourglass")
                 Spacer()
+                if task.state == .running {
+                    Button(action: { queue.pause(taskID: task.id) }) {
+                        Label(NSLocalizedString("pause", comment: ""), systemImage: "pause.fill")
+                    }
+                    .buttonStyle(.borderless)
+                } else if task.state == .paused || task.state == .failed || task.state == .pending {
+                    Button(action: { queue.resume(taskID: task.id) }) {
+                        Label(NSLocalizedString("resume", comment: ""), systemImage: "play.fill")
+                    }
+                    .buttonStyle(.borderless)
+                }
                 if task.canCancel {
                     Button(action: { onCancel?(); ExtractionExecutor.shared.cancel(task: task); queue.cancel(taskID: task.id) }) {
                         Image(systemName: "xmark.circle")
@@ -57,6 +82,46 @@ struct TaskRowView: View {
             }
             .font(.caption)
             .foregroundStyle(.secondary)
+
+            if expanded {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Text(NSLocalizedString("priority", comment: ""))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Picker("", selection: Binding(get: { task.priority }, set: { queue.setPriority(taskID: task.id, priority: $0) })) {
+                            Text(NSLocalizedString("high", comment: "")).tag(ArchiveTaskPriority.high)
+                            Text(NSLocalizedString("normal", comment: "")).tag(ArchiveTaskPriority.normal)
+                            Text(NSLocalizedString("low", comment: "")).tag(ArchiveTaskPriority.low)
+                        }
+                        .pickerStyle(.segmented)
+                    }
+                    if let current = task.currentFileName {
+                        Text("当前文件: \(current)").font(.caption).foregroundStyle(.secondary)
+                    }
+                    if let total = task.totalItems {
+                        Text("条目数: \(total)").font(.caption).foregroundStyle(.secondary)
+                    }
+                    if !task.errorDetails.isEmpty {
+                        Text("错误列表:").font(.caption).bold()
+                        ForEach(task.errorDetails, id: \.self) { e in
+                            Text(e).font(.caption2).foregroundStyle(.secondary)
+                        }
+                        HStack {
+                            Button(NSLocalizedString("retry", comment: "")) {
+                                showingPasswordSheet = true
+                            }
+                            Button(NSLocalizedString("skip", comment: "")) {
+                                // Mark as completed (skipped)
+                                task.state = .completed
+                            }
+                        }
+                        .buttonStyle(.bordered)
+                        .font(.caption)
+                    }
+                }
+                .transition(.opacity)
+            }
         }
         .padding(12)
         .background(
@@ -69,34 +134,60 @@ struct TaskRowView: View {
         )
         .onAppear {
             if task.state == .pending {
-                ExtractionExecutor.shared.ensureStarted(queue: queue, task: task)
+                queue.schedule()
             }
         }
         .onChange(of: task.state) { _, newState in
             if newState == .failed, let msg = task.errorMessage, msg.contains("密码") {
                 showingPasswordSheet = true
+                #if canImport(UIKit)
+                let gen = UINotificationFeedbackGenerator(); gen.notificationOccurred(.error)
+                #endif
+            } else if newState == .completed {
+                #if canImport(UIKit)
+                let gen = UINotificationFeedbackGenerator(); gen.notificationOccurred(.success)
+                #endif
             }
         }
         .sheet(isPresented: $showingPasswordSheet) {
             VStack(spacing: 16) {
-                Text("需要密码")
+                Text(NSLocalizedString("need_password", comment: ""))
                     .font(.headline)
-                SecureField("输入密码", text: $passwordInput)
-                    .textFieldStyle(.roundedBorder)
+                HStack(spacing: 8) {
+                    SecureField(NSLocalizedString("enter_password", comment: ""), text: $passwordInput)
+                        .textFieldStyle(.roundedBorder)
+                        .focused($pwFocused)
+                    #if canImport(UIKit)
+                    if let clip = UIPasteboard.general.string, !clip.isEmpty {
+                        Button(NSLocalizedString("paste_from_clipboard", comment: "")) {
+                            passwordInput = clip
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                    #endif
+                }
+                Toggle(NSLocalizedString("remember_password", comment: ""), isOn: $rememberPassword)
+                if task.failedAttempts >= 3 {
+                    Text(NSLocalizedString("failed_attempts_limit", comment: ""))
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
                 HStack {
-                    Button("取消") {
+                    Button(NSLocalizedString("cancel", comment: "")) {
                         showingPasswordSheet = false
                     }
                     Spacer()
-                    Button("重试") {
+                    Button(NSLocalizedString("retry", comment: "")) {
                         showingPasswordSheet = false
+                        if rememberPassword { PasswordStore.shared.setPassword(passwordInput, for: .file(task.sourceURL)) }
                         ExtractionExecutor.shared.retry(queue: queue, task: task, password: passwordInput)
                     }
-                    .disabled(passwordInput.isEmpty)
+                    .disabled(passwordInput.isEmpty || task.failedAttempts >= 5)
                 }
             }
             .padding()
-            .presentationDetents([.height(180)])
+            .onAppear { pwFocused = true }
+            .presentationDetents([.height(220)])
         }
     }
 }

@@ -13,12 +13,14 @@ struct HomeView: View {
                 header
 
                 Button(action: { showingPicker = true }) {
-                    Label("导入压缩文件", systemImage: "tray.and.arrow.down")
+                    Label(NSLocalizedString("import_archives", comment: ""), systemImage: "tray.and.arrow.down")
                         .font(.headline)
                         .padding(.horizontal, 18)
                         .padding(.vertical, 10)
                         .background(.thinMaterial, in: Capsule())
                 }
+                .keyboardShortcut("n", modifiers: [.command])
+                .accessibilityLabel(Text(NSLocalizedString("import_archives", comment: "")))
 
                 ScrollView {
                     LazyVStack(spacing: 12) {
@@ -29,6 +31,7 @@ struct HomeView: View {
                                 TaskRowView(task: task) {
                                     queue.cancel(taskID: task.id)
                                 }
+                                .transition(.asymmetric(insertion: .scale.combined(with: .opacity), removal: .opacity))
                             }
                         }
                     }
@@ -38,6 +41,17 @@ struct HomeView: View {
             }
             .padding(.top, 48)
             .padding(.bottom, 24)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        PasswordStore.shared.clearAll()
+                    } label: {
+                        Label(NSLocalizedString("clear_saved_passwords", comment: ""), systemImage: "key.fill")
+                    }
+                    .tint(.orange)
+                    .accessibilityLabel(Text(NSLocalizedString("clear_saved_passwords", comment: "")))
+                }
+            }
         }
         .sheet(isPresented: $showingPicker) {
             DocumentPickerView { urls in
@@ -74,10 +88,10 @@ struct HomeView: View {
 
     private var header: some View {
         VStack(spacing: 8) {
-            Text("Archive Manager")
+            Text(NSLocalizedString("app_title", comment: ""))
                 .font(.system(size: 34, weight: .bold, design: .rounded))
                 .foregroundStyle(.primary)
-            Text("Liquid glass 风格 · 解压任务管理")
+            Text(NSLocalizedString("subtitle", comment: ""))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
@@ -98,9 +112,9 @@ struct HomeView: View {
             Image(systemName: "doc.zipper")
                 .font(.system(size: 44))
                 .foregroundStyle(.secondary)
-            Text("尚无任务")
+            Text(NSLocalizedString("no_tasks", comment: ""))
                 .font(.headline)
-            Text("点击上方“导入压缩文件”开始")
+            Text(NSLocalizedString("tap_import_to_start", comment: ""))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
