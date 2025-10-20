@@ -33,6 +33,7 @@
         BB0000200000000000000019 /* ArchiveError.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000020000000000000001A /* ArchiveError.swift */; };
         BB000020000000000000001A /* PasswordStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000020000000000000001B /* PasswordStore.swift */; };
         BB000020000000000000001B /* ExtractionExecutor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000020000000000000001C /* ExtractionExecutor.swift */; };
+        BB0000200000000000000020 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA0000200000000000000020 /* LaunchScreen.storyboard */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -84,6 +85,7 @@
         AA000020000000000000001A /* ArchiveError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Models/ArchiveError.swift; sourceTree = SOURCE_ROOT; };
         AA000020000000000000001B /* PasswordStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Utilities/PasswordStore.swift; sourceTree = SOURCE_ROOT; };
         AA000020000000000000001C /* ExtractionExecutor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/ExtractionExecutor.swift; sourceTree = SOURCE_ROOT; };
+        AA0000200000000000000020 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = App/LaunchScreen.storyboard; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -115,6 +117,7 @@
             ); name = Products; sourceTree = "<group>"; };
         AA0000100000000000000001 /* App */ = {isa = PBXGroup; children = (
                 AA0000200000000000000010 /* Assets.xcassets */,
+                AA0000200000000000000020 /* LaunchScreen.storyboard */,
                 AA0000200000000000000001 /* ArchiveManagerApp.swift */,
             ); name = App; path = App; sourceTree = SOURCE_ROOT; };
         AA0000100000000000000002 /* UI */ = {isa = PBXGroup; children = (
@@ -258,6 +261,7 @@
 /* Begin PBXResourcesBuildPhase section */
         58B511DD1A9E6C7F00A3DE1D /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (
                 BB000020000000000000000F /* Assets.xcassets in Resources */,
+                BB0000200000000000000020 /* LaunchScreen.storyboard in Resources */,
             ); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXResourcesBuildPhase section */
 
@@ -454,6 +458,7 @@
                 DEVELOPMENT_TEAM = "";
                 ENABLE_PREVIEWS = YES;
                 GENERATE_INFOPLIST_FILE = YES;
+                INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
                 INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
                 INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
                 IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -476,6 +481,7 @@
                 DEVELOPMENT_TEAM = "";
                 ENABLE_PREVIEWS = YES;
                 GENERATE_INFOPLIST_FILE = YES;
+                INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
                 INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
                 INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
                 IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -489,6 +495,7 @@
                 SWIFT_VERSION = 5.0;
                 TARGETED_DEVICE_FAMILY = "1,2";
             }; name = Release; };
+
         AB00002000000000000000A2 /* Sideload */ = {isa = XCBuildConfiguration; buildSettings = {
                 ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
                 CODE_SIGNING_ALLOWED = NO;
@@ -498,6 +505,7 @@
                 DEVELOPMENT_TEAM = "";
                 ENABLE_PREVIEWS = YES;
                 GENERATE_INFOPLIST_FILE = YES;
+                INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
                 INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
                 INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
                 IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -511,6 +519,7 @@
                 SWIFT_VERSION = 5.0;
                 TARGETED_DEVICE_FAMILY = "1,2";
             }; name = Sideload; };
+
 
         58B511F11A9E6C7F00A3DE1D /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {
                 BUNDLE_LOADER = "";
