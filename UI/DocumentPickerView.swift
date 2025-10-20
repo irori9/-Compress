@@ -23,6 +23,11 @@ struct DocumentPickerView: UIViewControllerRepresentable {
         init(onPick: @escaping ([URL]) -> Void) { self.onPick = onPick }
 
         func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+            // Persist recent directories and establish security-scoped access for picked locations
+            for url in urls {
+                _ = url.startAccessingSecurityScopedResource()
+                SecurityScopedBookmarkStore.shared.addRecentDirectory(url)
+            }
             onPick(urls)
         }
 

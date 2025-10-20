@@ -49,8 +49,22 @@ public struct SevenZArchiveService: ArchiveService {
             }
         }
 
+        // Establish security-scoped access if bookmarked and coordinate file system access
+        _ = SecurityScopedBookmarkStore.shared.startAccessIfBookmarked(for: inputURL)
+        _ = SecurityScopedBookmarkStore.shared.startAccessIfBookmarked(for: destination)
+        let coordinator = NSFileCoordinator(filePresenter: nil)
+        var coordError: NSError?
+        coordinator.coordinate(readingItemAt: inputURL, options: [], error: &coordError) { _ in }
+        if let e = coordError { throw ArchiveError.ioError("无法读取源文件：\(e.localizedDescription)") }
+        coordinator.coordinate(writingItemAt: destination, options: [.forMerging], error: &coordError) { _ in }
+        if let e = coordError { throw ArchiveError.ioError("无法写入目标目录：\(e.localizedDescription)") }
+
         // Ensure destination exists
-        try? FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
+        do {
+            try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
+        } catch {
+            throw ArchiveError.ioError("无法创建目标目录，可能没有写入权限：\(error.localizedDescription)")
+        }
 
         // Progress tracking
         let totalBytes = (try? FileManager.default.attributesOfItem(atPath: inputURL.path)[.size] as? NSNumber)?.uint64Value ?? 0
