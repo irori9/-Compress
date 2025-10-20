@@ -138,3 +138,11 @@ CI：已在 `Build Unsigned IPA` 工作流中新增独立 job（`build-unsigned-
 - [ ] 接入真实库（ZIPFoundation / UnrarKit / LzmaSDK-ObjC）
 - [ ] 大文件与后台优化、错误恢复
 - [ ] 快照测试框架与可视化回归
+
+## Launch Screen 兼容性与全面屏适配（Hotfix）
+
+- 已将 LaunchScreen.storyboard 替换为 Xcode 15 / iOS 17 兼容的最小实现：仅 1 个 ViewController + 根 View，背景使用 System Background；未使用自定义类/模块/Runtime Attributes。
+- 工程设置：使用 UILaunchStoryboardName 指向 "LaunchScreen"，未配置旧式 Launch Images。
+- 设备：支持 iPhone（可选 iPad）。
+- CI：在归档前新增 ibtool --compile 预编译校验步骤，失败会输出详细日志并中止；通过后再执行 xcodebuild archive（见 .github/workflows/build-unsigned-ipa.yml）。
+- 全面屏适配：在 iPhone 15/16 上运行无黑边/缩放，状态栏与安全区显示正确。
