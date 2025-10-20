@@ -15,6 +15,13 @@ public final class TaskQueue: ObservableObject {
         return task
     }
 
+    @discardableResult
+    public func addTask(from url: URL, to destination: URL, format: ArchiveFormat = .auto) -> ArchiveTask {
+        let task = ArchiveTask(sourceURL: url, destinationURL: destination, format: format)
+        tasks.insert(task, at: 0)
+        return task
+    }
+
     public func updateProgress(for taskID: UUID, progress: ArchiveProgress) {
         guard let idx = tasks.firstIndex(where: { $0.id == taskID }) else { return }
         let task = tasks[idx]
