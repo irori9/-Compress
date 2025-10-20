@@ -6,7 +6,7 @@ public struct RarArchiveService: ArchiveService {
     public var supportedFormats: [ArchiveFormat] { [.rar] }
 
     // Injectable inspector for testing and future UnrarKit integration
-    public static var inspector: ((URL) throws -> RarInspectionResult) = { url in
+    static var inspector: ((URL) throws -> RarInspectionResult) = { url in
         let isRar = RarUtils.isRar(url: url)
         let multi = RarUtils.isMultiPart(url: url)
         return RarInspectionResult(isRar: isRar, isMultiPart: multi, hasEncryptedEntries: false)
@@ -118,7 +118,7 @@ public struct RarArchiveService: ArchiveService {
             while processed < totalBytes {
                 try Task.checkCancellation()
                 if cancellationToken?.isCancelled == true { throw ArchiveError.cancelled }
-                if let chunk = try fileHandle.read(upToCount: chunkSize), let chunk = chunk, !chunk.isEmpty {
+                if let chunk = try fileHandle.read(upToCount: chunkSize), !chunk.isEmpty {
                     try outHandle.write(contentsOf: chunk)
                     processed += UInt64(chunk.count)
                     let now = Date()

@@ -6,7 +6,7 @@ public struct ZipArchiveService: ArchiveService {
     public var supportedFormats: [ArchiveFormat] { [.zip] }
 
     // Injectable inspector for testing
-    public static var inspector: ((URL) throws -> ZipInspectionResult) = { url in
+    static var inspector: ((URL) throws -> ZipInspectionResult) = { url in
         try ZipUtils.inspect(url: url)
     }
 
@@ -121,7 +121,7 @@ public struct ZipArchiveService: ArchiveService {
             while true {
                 try Task.checkCancellation()
                 if cancellationToken?.isCancelled == true { throw ArchiveError.cancelled }
-                if let chunk = try fileHandle.read(upToCount: chunkSize), let chunk = chunk, !chunk.isEmpty {
+                if let chunk = try fileHandle.read(upToCount: chunkSize), !chunk.isEmpty {
                     try outHandle.write(contentsOf: chunk)
                     processed += UInt64(chunk.count)
                     let now = Date()

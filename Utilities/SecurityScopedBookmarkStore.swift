@@ -16,13 +16,14 @@ public final class SecurityScopedBookmarkStore {
         guard dirURL.isFileURL else { return }
         queue.sync {
             var list = (defaults.array(forKey: recentsKey) as? [Data]) ?? []
-            // Create bookmark data
-            guard let data = try? dirURL.bookmarkData(options: [.withSecurityScope], includingResourceValuesForKeys: nil, relativeTo: nil) else { return }
+            // Create bookmark data (store a standard bookmark; access via startAccessingSecurityScopedResource at runtime)
+            guard let data = try? dirURL.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil) else { return }
             // Filter out any existing entry that resolves to same path
             var newList: [Data] = []
             var existingPaths = Set<String>()
             for b in list {
-                if let resolved = resolveBookmark(b), let path = try? resolved.resourceValues(forKeys: [.isDirectoryKey]).url?.standardizedFileURL.path {
+                if let resolved = resolveBookmark(b) {
+                    let path = resolved.standardizedFileURL.path
                     existingPaths.insert(path)
                     newList.append(b)
                 }
@@ -79,10 +80,10 @@ public final class SecurityScopedBookmarkStore {
     public func resolveBookmark(_ data: Data) -> URL? {
         var isStale = false
         do {
-            let url = try URL(resolvingBookmarkData: data, options: [.withSecurityScope], relativeTo: nil, bookmarkDataIsStale: &isStale)
+            let url = try URL(resolvingBookmarkData: data, options: [], relativeTo: nil, bookmarkDataIsStale: &isStale)
             if isStale {
                 // Refresh stale bookmark
-                let refreshed = try url.bookmarkData(options: [.withSecurityScope], includingResourceValuesForKeys: nil, relativeTo: nil)
+                let refreshed = try url.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil)
                 var list = (defaults.array(forKey: recentsKey) as? [Data]) ?? []
                 if let idx = list.firstIndex(of: data) {
                     list[idx] = refreshed

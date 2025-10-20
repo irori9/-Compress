@@ -29,7 +29,10 @@ public final class UnarchiveExtensionHandler {
         }
 
         let progress = Progress(totalUnitCount: 100)
-        context.progress = progress
+        // Set via KVC when available to avoid compile-time dependency in app target
+        if (context as AnyObject).responds(to: NSSelectorFromString("setProgress:")) {
+            (context as AnyObject).setValue(progress, forKey: "progress")
+        }
 
         // Process first matching provider
         guard let provider = providers.first(where: { p in
@@ -91,8 +94,4 @@ public final class UnarchiveExtensionHandler {
     }
 }
 
-private extension ArchiveError {
-    func asNSError() -> NSError {
-        NSError(domain: "ArchiveManager", code: 1, userInfo: [NSLocalizedDescriptionKey: self.errorDescription ?? "未知错误"])    }
-}
 #endif
