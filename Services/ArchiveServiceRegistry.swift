@@ -16,7 +16,7 @@ public actor ArchiveServiceRegistry {
     public func probe(inputURL: URL) async -> ArchiveFormat {
         let ext = inputURL.pathExtension.lowercased()
         switch ext {
-        case "zip": return .zip
+        case "zip", "cbz", "z01": return .zip
         case "rar": return .rar
         case "7z": return .sevenZ
         default:
