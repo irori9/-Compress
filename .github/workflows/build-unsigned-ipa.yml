@@ -6,7 +6,7 @@ on:
       scheme:
         description: Xcode Scheme name
         required: true
-        default: ArchiveManager
+        default: ArchiveManager Sideload
       workspace:
         description: Xcode workspace (.xcworkspace). Leave empty if using project
         required: false
@@ -22,7 +22,7 @@ on:
       configuration:
         description: Xcode Build Configuration (Release/Sideload)
         required: false
-        default: Release
+        default: Sideload
       xcode_version:
         description: Optional Xcode version to select (e.g., 15.4). Leave empty for default
         required: false
@@ -35,11 +35,11 @@ jobs:
   build-unsigned-ipa:
     runs-on: macos-14
     env:
-      SCHEME: ${{ inputs.scheme || 'ArchiveManager' }}
+      SCHEME: ${{ inputs.scheme || 'ArchiveManager Sideload' }}
       WORKSPACE: ${{ inputs.workspace || '' }}
       PROJECT: ${{ inputs.project || 'ArchiveManager.xcodeproj' }}
       APP_NAME: ${{ inputs.app_name || 'ArchiveManager' }}
-      CONFIGURATION: ${{ inputs.configuration || 'Release' }}
+      CONFIGURATION: ${{ inputs.configuration || 'Sideload' }}
       XCODE_VERSION: ${{ inputs.xcode_version || '' }}
       ARCHIVE_PATH: build/App.xcarchive
       OUTPUT_DIR: build/output
