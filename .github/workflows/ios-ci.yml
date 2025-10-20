@@ -1,0 +1,33 @@
+name: iOS CI
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: macos-14
+    strategy:
+      matrix:
+        xcode: ["latest"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode ${{ matrix.xcode }}
+        if: matrix.xcode != 'latest'
+        run: sudo xcode-select -s "/Applications/Xcode_${{ matrix.xcode }}.app/Contents/Developer"
+
+      - name: Xcode version
+        run: xcodebuild -version
+
+      - name: Build and test (iOS Simulator)
+        run: |
+          xcodebuild -project ArchiveManager.xcodeproj \
+            -scheme ArchiveManager \
+            -sdk iphonesimulator \
+            -destination 'platform=iOS Simulator,OS=latest,name=iPhone 15 Pro' \
+            -configuration Debug \
+            build test
