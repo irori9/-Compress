@@ -143,3 +143,82 @@ enum ZipUtils {
         return ZipInspectionResult(isZip: isSigZip, isMultiPart: isMulti, entries: entries, totalUncompressedSize: totalSize)
     }
 }
+
+// MARK: - Security utilities: sanitize paths to avoid Zip Slip, control symlinks, and overwrite policy
+
+enum SymlinkPolicy: String {
+    /// Do not create symlinks from archives
+    case skip
+    /// Preserve symlinks only if the final resolved path stays inside destination root
+    case preserveInsideRoot
+    /// Resolve symlinks to files and copy data, only if the final path stays inside destination root
+    case resolveInsideRoot
+}
+
+enum PathSecurity {
+    enum Error: Swift.Error, LocalizedError {
+        case absolutePathNotAllowed
+        case pathTraversalDetected
+        case escapedDestinationRoot
+
+        var errorDescription: String? {
+            switch self {
+            case .absolutePathNotAllowed: return "拒绝绝对路径"
+            case .pathTraversalDetected: return "检测到路径穿越"
+            case .escapedDestinationRoot: return "路径超出目标根目录"
+            }
+        }
+    }
+
+    static func sanitizedURL(forArchiveEntry entryPath: String, destinationRoot: URL) throws -> URL {
+        // Normalize separators and strip leading drive letters or slashes
+        var p = entryPath.replacingOccurrences(of: "\\", with: "/")
+        if p.hasPrefix("/") { throw Error.absolutePathNotAllowed }
+        if p.contains(":") {
+            // Windows drive letter like C:\... -> reject
+            let comps = p.split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false)
+            if comps.count > 1 { throw Error.absolutePathNotAllowed }
+        }
+        // Collapse components and reject any traversal
+        let components = p.split(separator: "/").map(String.init)
+        var safeComponents: [String] = []
+        for c in components {
+            if c == "." || c.isEmpty { continue }
+            if c == ".." { throw Error.pathTraversalDetected }
+            safeComponents.append(c)
+        }
+        var out = destinationRoot
+        for c in safeComponents { out.appendPathComponent(c, isDirectory: false) }
+        let std = out.standardizedFileURL
+        let rootStd = destinationRoot.standardizedFileURL
+        // Ensure path remains inside root
+        if !std.path.hasPrefix(rootStd.path) { throw Error.escapedDestinationRoot }
+        return std
+    }
+
+    static func isInsideRoot(_ url: URL, root: URL) -> Bool {
+        let std = url.standardizedFileURL.path
+        let rootStd = root.standardizedFileURL.path
+        return std.hasPrefix(rootStd)
+    }
+
+    static func nextAvailableURL(for preferred: URL, policy: OverwritePolicy) -> URL {
+        let fm = FileManager.default
+        switch policy {
+        case .overwrite: return preferred
+        case .skip: return preferred
+        case .rename:
+            if !fm.fileExists(atPath: preferred.path) { return preferred }
+            let base = preferred.deletingPathExtension().lastPathComponent
+            let ext = preferred.pathExtension
+            let dir = preferred.deletingLastPathComponent()
+            var idx = 1
+            while true {
+                let name = ext.isEmpty ? "\(base) (\(idx))" : "\(base) (\(idx)).\(ext)"
+                let cand = dir.appendingPathComponent(name)
+                if !fm.fileExists(atPath: cand.path) { return cand }
+                idx += 1
+            }
+        }
+    }
+}
