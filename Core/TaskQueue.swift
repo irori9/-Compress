@@ -50,8 +50,14 @@ public final class TaskQueue: ObservableObject {
     }
 
     private func defaultDestination(for url: URL) -> URL {
-        let base = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first ?? URL(fileURLWithPath: NSTemporaryDirectory())
         let folderName = url.deletingPathExtension().lastPathComponent
+        // Prefer extracting beside the source file when we have security-scoped access
+        if SecurityScopedBookmarkStore.shared.startAccessIfBookmarked(for: url) {
+            let dir = url.deletingLastPathComponent()
+            return dir.appendingPathComponent(folderName, isDirectory: true)
+        }
+        // Fallback to app Documents directory
+        let base = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first ?? URL(fileURLWithPath: NSTemporaryDirectory())
         return base.appendingPathComponent(folderName, isDirectory: true)
     }
 }
