@@ -3,6 +3,7 @@ import SwiftUI
 struct HomeView: View {
     @EnvironmentObject private var queue: TaskQueue
     @State private var showingPicker = false
+    @State private var pendingScrollTo: UUID?
 
     var body: some View {
         ZStack {
@@ -22,22 +23,31 @@ struct HomeView: View {
                 .keyboardShortcut("n", modifiers: [.command])
                 .accessibilityLabel(Text(NSLocalizedString("import_archives", comment: "")))
 
-                ScrollView {
-                    LazyVStack(spacing: 12) {
-                        if queue.tasks.isEmpty {
-                            emptyState
-                        } else {
-                            ForEach(queue.tasks) { task in
-                                TaskRowView(task: task) {
-                                    queue.cancel(taskID: task.id)
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        LazyVStack(spacing: 12) {
+                            if queue.tasks.isEmpty {
+                                emptyState
+                            } else {
+                                ForEach(queue.tasks) { task in
+                                    TaskRowView(task: task) {
+                                        queue.cancel(taskID: task.id)
+                                    }
+                                    .id(task.id)
+                                    .transition(.asymmetric(insertion: .scale.combined(with: .opacity), removal: .opacity))
                                 }
-                                .transition(.asymmetric(insertion: .scale.combined(with: .opacity), removal: .opacity))
                             }
                         }
+                        .padding(.horizontal)
                     }
-                    .padding(.horizontal)
+                    .scrollIndicators(.hidden)
+                    .onChange(of: pendingScrollTo) { _, newVal in
+                        if let id = newVal {
+                            withAnimation { proxy.scrollTo(id, anchor: .top) }
+                            pendingScrollTo = nil
+                        }
+                    }
                 }
-                .scrollIndicators(.hidden)
             }
             .padding(.top, 48)
             .padding(.bottom, 24)
@@ -55,9 +65,12 @@ struct HomeView: View {
         }
         .sheet(isPresented: $showingPicker) {
             DocumentPickerView { urls in
+                var newTasks: [ArchiveTask] = []
                 for url in urls {
-                    _ = queue.addTask(from: url)
+                    let t = queue.addTask(from: url)
+                    newTasks.append(t)
                 }
+                if let first = newTasks.first { pendingScrollTo = first.id }
                 showingPicker = false
             }
         }
