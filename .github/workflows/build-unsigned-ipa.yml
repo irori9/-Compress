@@ -19,6 +19,10 @@ on:
         description: App name (.app bundle name and IPA prefix)
         required: true
         default: ArchiveManager
+      configuration:
+        description: Xcode Build Configuration (Release/Sideload)
+        required: false
+        default: Release
       xcode_version:
         description: Optional Xcode version to select (e.g., 15.4). Leave empty for default
         required: false
@@ -35,6 +39,7 @@ jobs:
       WORKSPACE: ${{ inputs.workspace || '' }}
       PROJECT: ${{ inputs.project || 'ArchiveManager.xcodeproj' }}
       APP_NAME: ${{ inputs.app_name || 'ArchiveManager' }}
+      CONFIGURATION: ${{ inputs.configuration || 'Release' }}
       XCODE_VERSION: ${{ inputs.xcode_version || '' }}
       ARCHIVE_PATH: build/App.xcarchive
       OUTPUT_DIR: build/output
@@ -60,6 +65,7 @@ jobs:
           echo "WORKSPACE=${WORKSPACE}"
           echo "PROJECT=${PROJECT}"
           echo "APP_NAME=${APP_NAME}"
+          echo "CONFIGURATION=${CONFIGURATION}"
           if [[ -n "${WORKSPACE}" && -n "${PROJECT}" ]]; then
             echo "ERROR: Set only one of WORKSPACE or PROJECT" >&2
             exit 1
@@ -69,7 +75,7 @@ jobs:
             exit 1
           fi
 
-      - name: Archive (iphoneos, unsigned Release)
+      - name: Archive (iphoneos, unsigned)
         shell: bash
         run: |
           set -euo pipefail
@@ -84,7 +90,7 @@ jobs:
             "${TARGET_ARG[@]}" \
             -scheme "${SCHEME}" \
             -sdk iphoneos \
-            -configuration Release \
+            -configuration "${CONFIGURATION}" \
             -archivePath "${ARCHIVE_PATH}" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
@@ -111,6 +117,73 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.APP_NAME }}-dSYM-${{ github.run_number }}
+          path: ${{ env.OUTPUT_DIR }}/dSYM.zip
+          if-no-files-found: warn
+          retention-days: 14
+
+  build-unsigned-ipa-sideload:
+    runs-on: macos-14
+    env:
+      SCHEME: 'ArchiveManager Sideload'
+      WORKSPACE: ''
+      PROJECT: 'ArchiveManager.xcodeproj'
+      APP_NAME: 'ArchiveManager'
+      CONFIGURATION: 'Sideload'
+      XCODE_VERSION: ${{ inputs.xcode_version || '' }}
+      ARCHIVE_PATH: build/App.xcarchive
+      OUTPUT_DIR: build/output
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode (optional)
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -n "${XCODE_VERSION}" ]]; then
+            echo "Attempting to select Xcode_${XCODE_VERSION}.app"
+            sudo xcode-select -s "/Applications/Xcode_${XCODE_VERSION}.app/Contents/Developer" || echo "Falling back to default Xcode"
+          fi
+          xcodebuild -version
+
+      - name: Archive (iphoneos, unsigned Sideload)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build
+          TARGET_ARG=(-project "${PROJECT}")
+
+          xcodebuild archive \
+            "${TARGET_ARG[@]}" \
+            -scheme "${SCHEME}" \
+            -sdk iphoneos \
+            -configuration "${CONFIGURATION}" \
+            -archivePath "${ARCHIVE_PATH}" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_IDENTITY="" \
+            SKIP_INSTALL=NO \
+            DEBUG_INFORMATION_FORMAT=dwarf-with-dsym
+
+      - name: Package unsigned IPA and dSYMs
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x Scripts/pipeline_helpers.sh
+          ./Scripts/pipeline_helpers.sh package-unsigned-ipa "${ARCHIVE_PATH}" "${APP_NAME}" "${OUTPUT_DIR}" "${{ github.run_number }}"
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-unsigned-sideload-${{ github.run_number }}
+          path: ${{ env.OUTPUT_DIR }}/*.ipa
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload dSYM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-dSYM-sideload-${{ github.run_number }}
           path: ${{ env.OUTPUT_DIR }}/dSYM.zip
           if-no-files-found: warn
           retention-days: 14
