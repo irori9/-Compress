@@ -1,4 +1,4 @@
-# iOS 解压缩文件管理器 — 项目脚手架（SwiftUI + Liquid Glass）
+# iOS 解压缩文件管理器 — 项目脚手架（SwiftUI + Liquid Glass)
 
 最低系统：iOS 17+
 语言/框架：Swift 5、SwiftUI、并发（async/await）
@@ -44,6 +44,49 @@ xcodebuild -project ArchiveManager.xcodeproj \
   -destination 'platform=iOS Simulator,OS=latest,name=iPhone 15 Pro' \
   build test
 ```
+
+## 未签名 IPA 构建与侧载（Sideloadly / AltStore）
+
+本仓库提供 GitHub Actions 工作流，自动构建 iPhone 真机可用的“未签名 IPA”，可在本地使用 Apple ID 进行重签并侧载安装。
+
+- 工作流文件：`.github/workflows/build-unsigned-ipa.yml`
+- 运行环境：macos-14（Xcode 15/16）
+- 产物：`<APP_NAME>-unsigned-<run_number>.ipa` 与 `dSYM.zip`
+
+触发方式：
+
+1) 打开仓库的 Actions 标签页，选择“Build Unsigned IPA”。
+2) 点击“Run workflow”，按需填写参数（有默认值，可直接运行）：
+   - Scheme（SCHEME）：默认 `ArchiveManager`
+   - Project（PROJECT）：默认 `ArchiveManager.xcodeproj`
+   - Workspace（WORKSPACE）：若使用 CocoaPods/SPM 且生成了 `.xcworkspace`，填写该路径；与 Project 二选一
+   - App name（APP_NAME）：默认 `ArchiveManager`
+   - Xcode version：可留空，使用 runner 默认 Xcode；或指定如 `15.4`
+
+工作流关键步骤：
+
+- 使用 `xcodebuild archive` 以 Release + iphoneos 产物构建，禁用代码签名：
+  `CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGNING_IDENTITY=""`
+- 从 `.xcarchive/Products/Applications/<APP_NAME>.app` 拷贝至 `Payload/` 并使用 `ditto` 打包为未签名 IPA。
+- 打包 dSYM 到 `dSYM.zip` 以便后续崩溃符号化。
+
+下载产物：
+
+- Workflow 运行完成后，在页面底部 Artifacts 区域下载 IPA 与 dSYM.zip。
+
+使用 Sideloadly 重签与安装：
+
+- 在电脑上安装并打开 Sideloadly，连接 iPhone。
+- 将下载的 IPA 拖入 Sideloadly，输入 Apple ID（建议用于侧载的独立账号）。
+- 开始签名与安装；完成后，前往 iPhone 设置 → 通用 → VPN 与设备管理，信任对应的开发者证书。
+- 免费开发者账号的签名有效期为 7 天，到期需重新安装。
+
+使用 AltStore 重签与安装：
+
+- 在电脑上安装 AltServer，并在设备上安装 AltStore（参考官方指引）。
+- 将 IPA 置于设备可访问的位置（如 iCloud Drive）。
+- 打开 AltStore → My Apps → 左上角 “+” → 选择 IPA → 使用 Apple ID 完成签名与安装。
+- 同样需要在“VPN 与设备管理”中信任证书；免费账号有效期 7 天。
 
 ## 依赖与桥接（预留）
 
