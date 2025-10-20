@@ -1,0 +1,116 @@
+name: Build Unsigned IPA
+
+on:
+  workflow_dispatch:
+    inputs:
+      scheme:
+        description: Xcode Scheme name
+        required: true
+        default: ArchiveManager
+      workspace:
+        description: Xcode workspace (.xcworkspace). Leave empty if using project
+        required: false
+        default: ''
+      project:
+        description: Xcode project (.xcodeproj). Leave empty if using workspace
+        required: false
+        default: ArchiveManager.xcodeproj
+      app_name:
+        description: App name (.app bundle name and IPA prefix)
+        required: true
+        default: ArchiveManager
+      xcode_version:
+        description: Optional Xcode version to select (e.g., 15.4). Leave empty for default
+        required: false
+        default: ''
+  push:
+    branches:
+      - main
+
+jobs:
+  build-unsigned-ipa:
+    runs-on: macos-14
+    env:
+      SCHEME: ${{ inputs.scheme || 'ArchiveManager' }}
+      WORKSPACE: ${{ inputs.workspace || '' }}
+      PROJECT: ${{ inputs.project || 'ArchiveManager.xcodeproj' }}
+      APP_NAME: ${{ inputs.app_name || 'ArchiveManager' }}
+      XCODE_VERSION: ${{ inputs.xcode_version || '' }}
+      ARCHIVE_PATH: build/App.xcarchive
+      OUTPUT_DIR: build/output
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode (optional)
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -n "${XCODE_VERSION}" ]]; then
+            echo "Attempting to select Xcode_${XCODE_VERSION}.app"
+            sudo xcode-select -s "/Applications/Xcode_${XCODE_VERSION}.app/Contents/Developer" || echo "Falling back to default Xcode"
+          fi
+          xcodebuild -version
+
+      - name: Validate configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "SCHEME=${SCHEME}"
+          echo "WORKSPACE=${WORKSPACE}"
+          echo "PROJECT=${PROJECT}"
+          echo "APP_NAME=${APP_NAME}"
+          if [[ -n "${WORKSPACE}" && -n "${PROJECT}" ]]; then
+            echo "ERROR: Set only one of WORKSPACE or PROJECT" >&2
+            exit 1
+          fi
+          if [[ -z "${WORKSPACE}" && -z "${PROJECT}" ]]; then
+            echo "ERROR: You must set WORKSPACE or PROJECT" >&2
+            exit 1
+          fi
+
+      - name: Archive (iphoneos, unsigned Release)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build
+          if [[ -n "${WORKSPACE}" ]]; then
+            TARGET_ARG=(-workspace "${WORKSPACE}")
+          else
+            TARGET_ARG=(-project "${PROJECT}")
+          fi
+
+          xcodebuild archive \
+            "${TARGET_ARG[@]}" \
+            -scheme "${SCHEME}" \
+            -sdk iphoneos \
+            -configuration Release \
+            -archivePath "${ARCHIVE_PATH}" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_IDENTITY="" \
+            SKIP_INSTALL=NO \
+            DEBUG_INFORMATION_FORMAT=dwarf-with-dsym
+
+      - name: Package unsigned IPA and dSYMs
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x Scripts/pipeline_helpers.sh
+          ./Scripts/pipeline_helpers.sh package-unsigned-ipa "${ARCHIVE_PATH}" "${APP_NAME}" "${OUTPUT_DIR}" "${{ github.run_number }}"
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-unsigned-${{ github.run_number }}
+          path: ${{ env.OUTPUT_DIR }}/*.ipa
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload dSYM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-dSYM-${{ github.run_number }}
+          path: ${{ env.OUTPUT_DIR }}/dSYM.zip
+          if-no-files-found: warn
+          retention-days: 14
