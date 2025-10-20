@@ -11,7 +11,7 @@ Description:
 
 Arguments:
   archive_path  Path to the .xcarchive directory (e.g., build/App.xcarchive)
-  app_name      Name of the .app (without extension) and resulting IPA prefix
+  app_name      Name of the .app (without extension). Only used as a fallback for naming.
   output_dir    Directory to place the .ipa and dSYM.zip
   run_number    GitHub Actions run number (used in IPA filename)
 EOF
@@ -23,11 +23,12 @@ log() {
 
 ensure_tools() {
   command -v ditto >/dev/null 2>&1 || { echo "ditto is required on macOS"; exit 1; }
+  [[ -x /usr/libexec/PlistBuddy ]] || { echo "/usr/libexec/PlistBuddy is required"; exit 1; }
 }
 
 package_unsigned_ipa() {
   local archive_path="$1"
-  local app_name="$2"
+  local app_name_fallback="$2"
   local output_dir="$3"
   local run_number="$4"
 
@@ -38,24 +39,46 @@ package_unsigned_ipa() {
 
   mkdir -p "$output_dir"
 
-  local app_path="$archive_path/Products/Applications/${app_name}.app"
+  # Read the ApplicationPath from the .xcarchive Info.plist to find the built .app
+  local info_plist="$archive_path/Info.plist"
+  local rel_app_path=""
+  if [[ -f "$info_plist" ]]; then
+    rel_app_path=$(/usr/libexec/PlistBuddy -c 'Print :ApplicationProperties:ApplicationPath' "$info_plist" 2>/dev/null || true)
+  fi
+
+  # Build absolute path to the .app within the archive
+  local app_path=""
+  if [[ -n "$rel_app_path" ]]; then
+    # Expect something like "Applications/AppName.app"
+    app_path="$archive_path/Products/$rel_app_path"
+  else
+    # Fallback to the provided app name
+    app_path="$archive_path/Products/Applications/${app_name_fallback}.app"
+  fi
+
   if [[ ! -d "$app_path" ]]; then
     echo "App bundle not found at: $app_path" >&2
-    echo "Please ensure APP_NAME matches the built .app name." >&2
+    echo "Ensure the archive contains an application or that the app_name fallback is correct." >&2
     exit 1
   fi
 
+  # Determine actual app bundle name (e.g., AppName.app)
+  local app_name
+  app_name=$(basename "$app_path")
+  local app_name_noext
+  app_name_noext="${app_name%.app}"
+
   local payload_dir="$output_dir/Payload"
-  local ipa_path="$output_dir/${app_name}-unsigned-${run_number}.ipa"
+  local ipa_path="$output_dir/${app_name_noext}-unsigned-${run_number}.ipa"
 
   rm -rf "$payload_dir" "$ipa_path"
   mkdir -p "$payload_dir"
 
-  log "Copying app bundle to Payload/"
-  cp -R "$app_path" "$payload_dir/"
+  log "Copying app bundle to Payload/ via ditto"
+  /usr/bin/ditto "$app_path" "$payload_dir/$app_name"
 
   log "Creating unsigned IPA: $ipa_path"
-  ditto -c -k --sequesterRsrc --keepParent "$payload_dir" "$ipa_path"
+  /usr/bin/ditto -c -k --sequesterRsrc --keepParent "$payload_dir" "$ipa_path"
 
   # Prepare dSYM.zip
   local dsym_zip="$output_dir/dSYM.zip"
@@ -67,7 +90,7 @@ package_unsigned_ipa() {
   if (( ${#dsym_files[@]} > 0 )); then
     log "Zipping dSYMs to $dsym_zip"
     # ditto supports multiple sources, destination last
-    ditto -c -k --sequesterRsrc --keepParent "${dsym_files[@]}" "$dsym_zip"
+    /usr/bin/ditto -c -k --sequesterRsrc --keepParent "${dsym_files[@]}" "$dsym_zip"
   else
     log "No dSYM files found in $dsym_dir; creating empty dSYM.zip"
     /usr/bin/zip -q -r "$dsym_zip" /dev/null || true

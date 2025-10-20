@@ -105,10 +105,24 @@ jobs:
           chmod +x Scripts/pipeline_helpers.sh
           ./Scripts/pipeline_helpers.sh package-unsigned-ipa "${ARCHIVE_PATH}" "${APP_NAME}" "${OUTPUT_DIR}" "${{ github.run_number }}"
 
+      - name: Validate IPA
+        shell: bash
+        run: |
+          set -euo pipefail
+          ls -lah "${OUTPUT_DIR}" || true
+          unzip -l "${OUTPUT_DIR}"/*.ipa | sed -n '1,200p'
+          APP_IN_PAYLOAD=$(zipinfo -1 "${OUTPUT_DIR}"/*.ipa | grep -E '^Payload/.+\.app/$' | head -n1 | sed 's:/$::')
+          echo "App bundle in IPA: $APP_IN_PAYLOAD"
+          rm -rf check && mkdir check && cd check
+          unzip -q ../"${OUTPUT_DIR}"/*.ipa "$APP_IN_PAYLOAD*"
+          du -sh "$APP_IN_PAYLOAD"
+          BIN_PATH=$(basename "$APP_IN_PAYLOAD"); BIN_PATH="$APP_IN_PAYLOAD/$BIN_PATH"
+          file "$BIN_PATH" || true
+
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.APP_NAME }}-unsigned-${{ github.run_number }}
+          name: ${{ env.APP_NAME }}-unsigned-${{ github.run_number }}.ipa
           path: ${{ env.OUTPUT_DIR }}/*.ipa
           if-no-files-found: error
           retention-days: 14
@@ -116,7 +130,7 @@ jobs:
       - name: Upload dSYM artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.APP_NAME }}-dSYM-${{ github.run_number }}
+          name: ${{ env.APP_NAME }}-dSYM-${{ github.run_number }}.zip
           path: ${{ env.OUTPUT_DIR }}/dSYM.zip
           if-no-files-found: warn
           retention-days: 14
@@ -172,10 +186,24 @@ jobs:
           chmod +x Scripts/pipeline_helpers.sh
           ./Scripts/pipeline_helpers.sh package-unsigned-ipa "${ARCHIVE_PATH}" "${APP_NAME}" "${OUTPUT_DIR}" "${{ github.run_number }}"
 
+      - name: Validate IPA
+        shell: bash
+        run: |
+          set -euo pipefail
+          ls -lah "${OUTPUT_DIR}" || true
+          unzip -l "${OUTPUT_DIR}"/*.ipa | sed -n '1,200p'
+          APP_IN_PAYLOAD=$(zipinfo -1 "${OUTPUT_DIR}"/*.ipa | grep -E '^Payload/.+\.app/$' | head -n1 | sed 's:/$::')
+          echo "App bundle in IPA: $APP_IN_PAYLOAD"
+          rm -rf check && mkdir check && cd check
+          unzip -q ../"${OUTPUT_DIR}"/*.ipa "$APP_IN_PAYLOAD*"
+          du -sh "$APP_IN_PAYLOAD"
+          BIN_PATH=$(basename "$APP_IN_PAYLOAD"); BIN_PATH="$APP_IN_PAYLOAD/$BIN_PATH"
+          file "$BIN_PATH" || true
+
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.APP_NAME }}-unsigned-sideload-${{ github.run_number }}
+          name: ${{ env.APP_NAME }}-unsigned-sideload-${{ github.run_number }}.ipa
           path: ${{ env.OUTPUT_DIR }}/*.ipa
           if-no-files-found: error
           retention-days: 14
@@ -183,7 +211,7 @@ jobs:
       - name: Upload dSYM artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.APP_NAME }}-dSYM-sideload-${{ github.run_number }}
+          name: ${{ env.APP_NAME }}-dSYM-sideload-${{ github.run_number }}.zip
           path: ${{ env.OUTPUT_DIR }}/dSYM.zip
           if-no-files-found: warn
           retention-days: 14
