@@ -30,3 +30,9 @@ public enum ArchiveError: LocalizedError, Sendable, Equatable {
         }
     }
 }
+
+public extension ArchiveError {
+    func asNSError() -> NSError {
+        NSError(domain: "ArchiveManager", code: 1, userInfo: [NSLocalizedDescriptionKey: self.errorDescription ?? "未知错误"])
+    }
+}

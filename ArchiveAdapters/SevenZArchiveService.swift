@@ -6,7 +6,7 @@ public struct SevenZArchiveService: ArchiveService {
     public var supportedFormats: [ArchiveFormat] { [.sevenZ] }
 
     // Injectable inspector for testing and future LzmaSDK-ObjC integration
-    public static var inspector: ((URL) throws -> SevenZInspectionResult) = { url in
+    static var inspector: ((URL) throws -> SevenZInspectionResult) = { url in
         let is7z = SevenZUtils.is7z(url: url)
         let multi = SevenZUtils.isMultiPart(url: url)
         return SevenZInspectionResult(isSevenZ: is7z, isMultiPart: multi, hasEncryptedEntries: false)
@@ -118,7 +118,7 @@ public struct SevenZArchiveService: ArchiveService {
             while processed < totalBytes {
                 try Task.checkCancellation()
                 if cancellationToken?.isCancelled == true { throw ArchiveError.cancelled }
-                if let chunk = try fileHandle.read(upToCount: chunkSize), let chunk = chunk, !chunk.isEmpty {
+                if let chunk = try fileHandle.read(upToCount: chunkSize), !chunk.isEmpty {
                     try outHandle.write(contentsOf: chunk)
                     processed += UInt64(chunk.count)
                     let now = Date()
