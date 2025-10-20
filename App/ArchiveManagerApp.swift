@@ -32,9 +32,9 @@ struct ArchiveManagerApp: App {
         for cp in cps {
             let src = URL(fileURLWithPath: cp.sourcePath)
             let dest = URL(fileURLWithPath: cp.destinationPath)
-            let task = taskQueue.addTask(from: src, to: dest, format: .auto)
-            ExtractionExecutor.shared.ensureStarted(queue: taskQueue, task: task)
+            _ = taskQueue.addTask(from: src, to: dest, format: .auto)
         }
+        taskQueue.schedule()
     }
 
     private func registerBackgroundTasks() {
