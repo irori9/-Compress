@@ -32,7 +32,7 @@
 ## 构建与 CI
 
 - Xcode 工程：`ArchiveManager.xcodeproj`
-- Scheme：`ArchiveManager`（已共享）
+- Scheme：`ArchiveManager`、`ArchiveManager Sideload`（均为共享 Scheme）
 - GitHub Actions：`.github/workflows/ios-ci.yml` 使用 macOS runner 构建并运行单测。
 
 本地构建示例：
@@ -87,6 +87,32 @@ xcodebuild -project ArchiveManager.xcodeproj \
 - 将 IPA 置于设备可访问的位置（如 iCloud Drive）。
 - 打开 AltStore → My Apps → 左上角 “+” → 选择 IPA → 使用 Apple ID 完成签名与安装。
 - 同样需要在“VPN 与设备管理”中信任证书；免费账号有效期 7 天。
+
+## Sideload 构建配置与 Scheme（禁用不兼容能力/扩展）
+
+- 新增 Build Configuration：`Sideload`（基于 Release），默认禁用代码签名，优化等级与 Release 一致。
+- 新增共享 Scheme：`ArchiveManager Sideload`
+  - Archive/Profiling 使用 `Sideload` 配置；
+  - 不参与单元测试/静态分析。
+- 能力与扩展：当前工程未启用 Push/App Groups/Background Modes 等能力，也未包含扩展 Target；Sideload 变体仅构建主 App。
+- Entitlements：未设置额外 entitlements，维持最小权限以提升自签/侧载成功率。
+
+本地构建 Sideload 未签名产物示例：
+
+```bash
+xcodebuild -project ArchiveManager.xcodeproj \
+  -scheme "ArchiveManager Sideload" \
+  -configuration Sideload \
+  -sdk iphoneos \
+  -archivePath build/App.xcarchive \
+  archive \
+  CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGNING_IDENTITY="" \
+  SKIP_INSTALL=NO DEBUG_INFORMATION_FORMAT=dwarf-with-dsym
+```
+
+CI：已在 `Build Unsigned IPA` 工作流中新增独立 job（`build-unsigned-ipa-sideload`），沿用未签名 IPA 打包逻辑，上传工件名带 `-sideload` 后缀。
+
+> 侧载方案适用于自签/AltStore/Sideloadly 等安装场景，免费开发者证书有效期 7 天，到期可重新签名安装。实测目标平台：iPhone/iPad（iOS 16/17/18）。
 
 ## 依赖与桥接（预留）
 
