@@ -23,6 +23,11 @@
         BB000020000000000000000F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA0000200000000000000010 /* Assets.xcassets */; };
         BB0000200000000000000010 /* ArchiveManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000200000000000000011 /* ArchiveManagerTests.swift */; };
         BB0000200000000000000011 /* ArchiveManagerSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000200000000000000012 /* ArchiveManagerSnapshotTests.swift */; };
+        BB0000200000000000000012 /* RarUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000200000000000000013 /* RarUtils.swift */; };
+        BB0000200000000000000013 /* SevenZUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000200000000000000014 /* SevenZUtils.swift */; };
+        BB0000200000000000000014 /* RarArchiveServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000200000000000000015 /* RarArchiveServiceTests.swift */; };
+        BB0000200000000000000015 /* SevenZArchiveServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000200000000000000016 /* SevenZArchiveServiceTests.swift */; };
+        BB0000200000000000000016 /* ZipUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000200000000000000017 /* ZipUtils.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -64,6 +69,11 @@
         AA0000200000000000000010 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = App/Assets.xcassets; sourceTree = SOURCE_ROOT; };
         AA0000200000000000000011 /* ArchiveManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/ArchiveManagerTests/ArchiveManagerTests.swift; sourceTree = SOURCE_ROOT; };
         AA0000200000000000000012 /* ArchiveManagerSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/ArchiveManagerSnapshotTests/ArchiveManagerSnapshotTests.swift; sourceTree = SOURCE_ROOT; };
+        AA0000200000000000000013 /* RarUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Utilities/RarUtils.swift; sourceTree = SOURCE_ROOT; };
+        AA0000200000000000000014 /* SevenZUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Utilities/SevenZUtils.swift; sourceTree = SOURCE_ROOT; };
+        AA0000200000000000000015 /* RarArchiveServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/ArchiveManagerTests/RarArchiveServiceTests.swift; sourceTree = SOURCE_ROOT; };
+        AA0000200000000000000016 /* SevenZArchiveServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/ArchiveManagerTests/SevenZArchiveServiceTests.swift; sourceTree = SOURCE_ROOT; };
+        AA0000200000000000000017 /* ZipUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Utilities/ZipUtils.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -122,6 +132,9 @@
             ); name = ArchiveAdapters; path = ArchiveAdapters; sourceTree = SOURCE_ROOT; };
         AA0000100000000000000007 /* Utilities */ = {isa = PBXGroup; children = (
                 AA000020000000000000000E /* CancellationToken.swift */,
+                AA0000200000000000000017 /* ZipUtils.swift */,
+                AA0000200000000000000013 /* RarUtils.swift */,
+                AA0000200000000000000014 /* SevenZUtils.swift */,
             ); name = Utilities; path = Utilities; sourceTree = SOURCE_ROOT; };
         AA0000100000000000000008 /* Tests */ = {isa = PBXGroup; children = (
                 AA0000100000000000000009 /* ArchiveManagerTests */,
@@ -129,6 +142,8 @@
             ); name = Tests; path = Tests; sourceTree = SOURCE_ROOT; };
         AA0000100000000000000009 /* ArchiveManagerTests */ = {isa = PBXGroup; children = (
                 AA0000200000000000000011 /* ArchiveManagerTests.swift */,
+                AA0000200000000000000015 /* RarArchiveServiceTests.swift */,
+                AA0000200000000000000016 /* SevenZArchiveServiceTests.swift */,
             ); name = ArchiveManagerTests; path = ArchiveManagerTests; sourceTree = "<group>"; };
         AA000010000000000000000A /* ArchiveManagerSnapshotTests */ = {isa = PBXGroup; children = (
                 AA0000200000000000000012 /* ArchiveManagerSnapshotTests.swift */,
@@ -247,9 +262,14 @@
                 BB000020000000000000000C /* RarArchiveService.swift in Sources */,
                 BB000020000000000000000D /* SevenZArchiveService.swift in Sources */,
                 BB000020000000000000000E /* CancellationToken.swift in Sources */,
+                BB0000200000000000000016 /* ZipUtils.swift in Sources */,
+                BB0000200000000000000012 /* RarUtils.swift in Sources */,
+                BB0000200000000000000013 /* SevenZUtils.swift in Sources */,
             ); runOnlyForDeploymentPostprocessing = 0; };
         58B511E71A9E6C7F00A3DE1D /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (
                 BB0000200000000000000010 /* ArchiveManagerTests.swift in Sources */,
+                BB0000200000000000000014 /* RarArchiveServiceTests.swift in Sources */,
+                BB0000200000000000000015 /* SevenZArchiveServiceTests.swift in Sources */,
             ); runOnlyForDeploymentPostprocessing = 0; };
         58B511E91A9E6C7F00A3DE1D /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (
                 BB0000200000000000000011 /* ArchiveManagerSnapshotTests.swift in Sources */,
