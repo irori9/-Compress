@@ -32,7 +32,7 @@
 ## 构建与 CI
 
 - Xcode 工程：`ArchiveManager.xcodeproj`
-- Scheme：`ArchiveManager`、`ArchiveManager Sideload`（均为共享 Scheme）
+- Scheme：`ArchiveManager`（默认调试/正式构建）、`ArchiveManager Sideload`（CI 与侧载，排除扩展 Target）
 - GitHub Actions：`.github/workflows/ios-ci.yml` 使用 macOS runner 构建并运行单测。
 
 本地构建示例：
@@ -56,11 +56,11 @@ xcodebuild -project ArchiveManager.xcodeproj \
 触发方式：
 
 1) 打开仓库的 Actions 标签页，选择“Build Unsigned IPA”。
-2) 点击“Run workflow”，按需填写参数（有默认值，可直接运行）：
-   - Scheme（SCHEME）：默认 `ArchiveManager`
+2) 点击“Run workflow”，按需填写参数（有默认值，可直接运行）。工作流已固定使用 `ArchiveManager Sideload` Scheme，仅需根据需要调整以下输入：
    - Project（PROJECT）：默认 `ArchiveManager.xcodeproj`
    - Workspace（WORKSPACE）：若使用 CocoaPods/SPM 且生成了 `.xcworkspace`，填写该路径；与 Project 二选一
    - App name（APP_NAME）：默认 `ArchiveManager`
+   - Configuration（CONFIGURATION）：默认 `Sideload`，保持此值以生成未签名 IPA
    - Xcode version：可留空，使用 runner 默认 Xcode；或指定如 `15.4`
 
 工作流关键步骤：
@@ -90,8 +90,9 @@ xcodebuild -project ArchiveManager.xcodeproj \
 
 ## Sideload 构建配置与 Scheme（禁用不兼容能力/扩展）
 
-- 新增 Build Configuration：`Sideload`（基于 Release），默认禁用代码签名，优化等级与 Release 一致。
-- 新增共享 Scheme：`ArchiveManager Sideload`
+- Build Configuration：`Sideload`（基于 Release），默认禁用代码签名，优化等级与 Release 一致。
+- 共享 Scheme：`ArchiveManager Sideload`
+  - 仅包含主 App Target，不构建扩展；
   - Archive/Profiling 使用 `Sideload` 配置；
   - 不参与单元测试/静态分析。
 - 能力与扩展：当前工程未启用 Push/App Groups/Background Modes 等能力，也未包含扩展 Target；Sideload 变体仅构建主 App。
@@ -110,7 +111,14 @@ xcodebuild -project ArchiveManager.xcodeproj \
   SKIP_INSTALL=NO DEBUG_INFORMATION_FORMAT=dwarf-with-dsym
 ```
 
-CI：已在 `Build Unsigned IPA` 工作流中新增独立 job（`build-unsigned-ipa-sideload`），沿用未签名 IPA 打包逻辑，上传工件名带 `-sideload` 后缀。
+CI：`Build Unsigned IPA` 工作流固定使用 `ArchiveManager Sideload` Scheme 与 `Sideload` 配置归档，生成的 IPA 与 dSYM 均不包含扩展代码。
+
+### Scheme 切换（正式 / 侧载）
+
+- 在 Xcode 顶部工具栏的 Scheme 下拉中切换，或通过菜单 Product → Scheme。
+- 选择 `ArchiveManager` 进行日常调试、模拟器运行或发布流程。
+- 选择 `ArchiveManager Sideload` 生成仅包含主 App 的未签名 IPA；归档时会自动启用 `Sideload` 配置并排除扩展。
+- 命令行可通过 `xcodebuild -scheme "ArchiveManager"` 或 `xcodebuild -scheme "ArchiveManager Sideload"` 切换（参见上文示例）。
 
 > 侧载方案适用于自签/AltStore/Sideloadly 等安装场景，免费开发者证书有效期 7 天，到期可重新签名安装。实测目标平台：iPhone/iPad（iOS 16/17/18）。
 
